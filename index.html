@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام استخراج نتائج الطلاب</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .upload-section {
+            background: #f8f9fa;
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            background: #f0f2ff;
+            border-color: #764ba2;
+        }
+
+        .upload-section.dragover {
+            background: #e8ebff;
+            border-color: #764ba2;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .upload-hint {
+            color: #999;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .file-name {
+            color: #667eea;
+            font-weight: 600;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+            color: #667eea;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+            border-left: 4px solid #c33;
+        }
+
+        .success {
+            background: #efe;
+            color: #3c3;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+            border-left: 4px solid #3c3;
+        }
+
+        .results-section {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .results-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .results-header h2 {
+            font-size: 22px;
+            margin-bottom: 10px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        thead {
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        th {
+            padding: 15px;
+            text-align: right;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 14px;
+            color: #555;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .rank {
+            background: #667eea;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .status-pass {
+            color: #28a745;
+            font-weight: 600;
+        }
+
+        .status-fail {
+            color: #dc3545;
+            font-weight: 600;
+        }
+
+        .average {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 10px 20px rgba(108, 117, 125, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+
+            .upload-section {
+                padding: 25px;
+            }
+
+            .upload-icon {
+                font-size: 36px;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 10px;
+            }
+
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 نظام استخراج نتائج الطلاب</h1>
+        <p class="subtitle">رفع ملف PDF يحتوي على نتائج الطلاب واستخراجها تلقائياً</p>
+
+        <div class="error" id="errorMsg"></div>
+        <div class="success" id="successMsg"></div>
+
+        <div class="upload-section" id="uploadSection">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text">اسحب ملف PDF هنا أو انقر للاختيار</div>
+            <div class="upload-hint">يدعم ملفات PDF فقط (الحد الأقصى: 10 MB)</div>
+            <button class="btn" onclick="document.getElementById('fileInput').click()">اختر ملف</button>
+            <div class="file-name" id="fileName"></div>
+            <input type="file" id="fileInput" accept=".pdf" />
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>جاري معالجة الملف... يرجى الانتظار</p>
+        </div>
+
+        <div class="results-section" id="resultsSection">
+            <div class="results-header">
+                <h2>✅ تم استخراج النتائج بنجاح</h2>
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalCount">0</div>
+                        <div class="stat-label">إجمالي الطلاب</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="passCount">0</div>
+                        <div class="stat-label">ناجحون</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="failCount">0</div>
+                        <div class="stat-label">راسبون</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="avgScore">0</div>
+                        <div class="stat-label">المتوسط العام</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>الترتيب</th>
+                            <th>اسم الطالب</th>
+                            <th>رقم القيد</th>
+                            <th>المعدل</th>
+                            <th>الحالة</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentsTable"></tbody>
+                </table>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn" onclick="downloadResults()">📥 تحميل النتائج</button>
+                <button class="btn btn-secondary" onclick="resetForm()">🔄 رفع ملف جديد</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentFile = null;
+        let currentData = null;
+
+        // Drag and drop
+        const uploadSection = document.getElementById('uploadSection');
+
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('dragover');
+        });
+
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('dragover');
+        });
+
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect(files[0]);
+            }
+        });
+
+        // File input change
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        function handleFileSelect(file) {
+            if (file.type !== 'application/pdf') {
+                showError('يرجى اختيار ملف PDF فقط');
+                return;
+            }
+
+            if (file.size > 10 * 1024 * 1024) {
+                showError('حجم الملف يجب أن يكون أقل من 10 MB');
+                return;
+            }
+
+            currentFile = file;
+            document.getElementById('fileName').textContent = `✓ تم اختيار: ${file.name}`;
+            uploadFile();
+        }
+
+        async function uploadFile() {
+            if (!currentFile) return;
+
+            showLoading(true);
+            hideError();
+            hideSuccess();
+
+            try {
+                const formData = new FormData();
+                formData.append('file', currentFile);
+
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!data.ok) {
+                    throw new Error(data.error || 'خطأ في معالجة الملف');
+                }
+
+                currentData = data;
+                displayResults(data);
+                showSuccess(`تم استخراج ${data.count} طالب بنجاح`);
+            } catch (error) {
+                showError(error.message || 'حدث خطأ أثناء معالجة الملف');
+                console.error('Upload error:', error);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function displayResults(data) {
+            const students = data.students || [];
+
+            // Calculate statistics
+            const passCount = students.filter(s => s.status === 'ناجح').length;
+            const failCount = students.filter(s => s.status === 'راسب').length;
+            const avgScore = students.length > 0 
+                ? (students.reduce((sum, s) => sum + s.average, 0) / students.length).toFixed(2)
+                : 0;
+
+            // Update stats
+            document.getElementById('totalCount').textContent = students.length;
+            document.getElementById('passCount').textContent = passCount;
+            document.getElementById('failCount').textContent = failCount;
+            document.getElementById('avgScore').textContent = avgScore;
+
+            // Populate table
+            const tbody = document.getElementById('studentsTable');
+            tbody.innerHTML = '';
+
+            students.forEach((student, index) => {
+                const row = document.createElement('tr');
+                const statusClass = student.status === 'ناجح' ? 'status-pass' : 'status-fail';
+                
+                row.innerHTML = `
+                    <td><div class="rank">${student.rank || index + 1}</div></td>
+                    <td>${student.name}</td>
+                    <td>${student.id}</td>
+                    <td><span class="average">${student.average}</span></td>
+                    <td><span class="${statusClass}">${student.status}</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('resultsSection').style.display = 'block';
+            uploadSection.style.display = 'none';
+        }
+
+        function downloadResults() {
+            if (!currentData) return;
+
+            const students = currentData.students || [];
+            let csv = 'الترتيب,اسم الطالب,رقم القيد,المعدل,الحالة\n';
+
+            students.forEach(student => {
+                csv += `${student.rank},${student.name},${student.id},${student.average},${student.status}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'student-results.csv');
+            link.style.visibility = 'hidden';
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function resetForm() {
+            currentFile = null;
+            currentData = null;
+            document.getElementById('fileInput').value = '';
+            document.getElementById('fileName').textContent = '';
+            document.getElementById('resultsSection').style.display = 'none';
+            uploadSection.style.display = 'block';
+            hideError();
+            hideSuccess();
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMsg');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function hideError() {
+            document.getElementById('errorMsg').style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMsg');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+        }
+
+        function hideSuccess() {
+            document.getElementById('successMsg').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
