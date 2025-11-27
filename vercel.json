@@ -1,0 +1,12 @@
+{
+  "routes": [
+    {
+      "src": "/upload",
+      "dest": "/api/upload.js"
+    },
+    {
+      "src": "/api/parse",
+      "dest": "/api/parse.js"
+    }
+  ]
+}
